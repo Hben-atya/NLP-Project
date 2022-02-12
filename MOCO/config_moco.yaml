@@ -1,0 +1,39 @@
+dataset:    # General paths and dataset splitting parameters
+    data_path_train: 'Images\train'
+    data_path_val: 'Images\val'
+    qa_path_train: 'Questions_and_IDs/train/VQAnswering_2020_Train_QA_Pairs.txt'
+    qa_path_val: 'Questions_and_IDs/val/VQAnswering_2020_Val_QA_Pairs.txt'
+    max_len: 25
+
+transform_augmentation: # Transform arguments
+    GaussianBlur:   # Gaussian blurring augmentation arguments
+        kernel_size: 3  # Gaussian kernel size
+        sigma_start: 0.1    # Min. sigma
+        sigma_end: 1.0  # Max. sigma
+
+    p_apply: 0.5    # Probability to apply gaussian blurring
+
+    RandomHorizontalFlip: 0.5   # Probability to horizontally flip image
+    SizeCrop: 150   # Size of randomly cropped image
+
+dataloader: # Dataloader arguments
+    batch_size: 128 # Batch size for MoCo model
+    num_workers: 8  # Number of workers for dataloaders (both MoCo and linear classifier models)
+
+moco_model: # MoCo model arguments for initialization and training
+    log_path: 'MOCO_Logs' # Path to logs folder
+    num_epochs: 500 # Number of epochs to train
+    to_grayscale: 1 # If 1, grayscale images as input, if 0 RGB images as input
+    val_step: 10    # How many epochs between each validation
+    save_every: 10    # How many epochs between each save
+    resume_run: 0   # Resuming previous run (1=Yes, 0=No)
+    num_classes: 10 # Number of classes in data (10 for Imagenette)
+    temperature: 0.07   # Temperature parameter
+    momentum: 0.999 # Momentum parameter
+    feat_dim: 128   # Feature dimension for encoder output
+    K: 2048 # Queue length
+    optim:  # Optimizer arguments
+        lr: 0.05    # Learning rate for SGD optimizer
+        momentum: 0.9   # Momentum for SGD optimizer
+        weight_decay: 0.0001    # Weight decay for SGD optimizer
+
