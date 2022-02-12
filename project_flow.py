@@ -15,7 +15,7 @@ medical VQA project - methods:
 
 3. Fusion Algorithm:
   a. attention mechanism:
-    i.   Stacked At-tention Networks (SAN) 
+    i.   Stacked Attention Networks (SAN) 
     ii.  Bilinear Attention Networks (BAN)
     iii. transformer?
   b. Multi-modal pooling:
