@@ -20,8 +20,14 @@ medical VQA project - methods:
     iii. transformer?
   b. Multi-modal pooling:
     i.   direct concatenation
-    ii.  
+    ii.  Multi-modal Compact Bilinear (MCB) pooling
+    iii. Multi-modal Factorized Bi-linear (MFB) pooling
+  c. MFB pooling with attention solutions
 
+4. Answering Component:
+  a. classification mode
+  b. generation mode
+  c. switching strategy to adopt both classification and genera-tion.
 
 
 """
