@@ -1,0 +1,22 @@
+dataset:    # General paths and dataset splitting parameters
+    im_path: 'VQA_RAD_DATA\VQA_RAD Image Folder'
+
+QA_model:
+    log_path: 'QA_Logs' # Path to logs folder
+    num_epochs: 250 # Number of epochs to train
+    val_step: 2    # How many epochs between each validation
+    save_every: 2    # How many epochs between each save
+    resume_run: 0   # Resuming previous run (1=Yes, 0=No)
+    batch_size: 4 # Batch size for QA model
+    num_workers: 8  # Number of workers for dataloaders
+    Q_Classifier_Path: 'C:/Users/dekel/OneDrive/Masters/NLP/NLP_Course_Project/QA_Logs/Q_Type_Logs/checkpoint-320'  # Path to checkpoint
+    A_Classifier_Path: 'C:/Users/dekel/OneDrive/Masters/NLP/NLP_Course_Project/QA_Logs/A_Type_Logs/checkpoint-80'  # Path to checkpoint
+    Im_Classifier_Path:  'C:/Users/dekel/OneDrive/Masters/NLP/NLP_Course_Project/QA_Logs/Classifier_Logs/checkpoints/epoch=8-step=512.ckpt'  # Path to checkpoint
+
+Im_Cls_model:
+    log_path: 'QA_Logs' # Path to logs folder
+    num_epochs: 100 # Number of epochs to train
+    batch_size: 32 # Batch size for QA model
+    num_workers: 4  # Number of workers for dataloaders
+
+
