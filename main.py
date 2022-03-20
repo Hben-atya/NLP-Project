@@ -63,19 +63,20 @@ if __name__ == '__main__':
     model = QAModel(model_args=QA_model_args, device=device)
 
     # Loads the state_dict from the best trained model. Comment if you want to train from the beginning
-    model.load_state_dict(torch.load('QA_Logs/QA_Classifier_54_73/best_QA_model.pt'))
+    # model.load_state_dict(torch.load('QA_Logs/QA_Classifier_55_73_1TransformerOnFeatMap/best_QA_model.pt'))
 
     # Initialize the trainer
     trainer = QA_Trainer(QA_model=model,
                          QA_model_args=QA_model_args,
-                         optimizer=torch.optim.AdamW(model.parameters(), lr=5e-7),
-                         device=device)
+                         optimizer=torch.optim.AdamW(model.parameters(), lr=5e-6),
+                         device=device,
+                         ref_arr=le.classes_)
 
     # Fit the model to the data using the trainer. Comment to skip the training
     trainer.fit(trainloader, valloader)
 
     # Evaluate model on test set
-    loss, acc1, acc5, bleu = trainer.eval(dl_val=testloader, ref_arr=le.classes_)
+    loss, acc1, acc5, bleu = trainer.eval(dl_val=testloader)
     print('BLEU Score:', bleu)
     print('Top1 Accuracy:', acc1.item())
     print('Top5 Accuracy:', acc5)

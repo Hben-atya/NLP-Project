@@ -131,6 +131,8 @@ class QAModel(nn.Module):
         self.image_classifier.load_state_dict(im_cls_checkpoint['state_dict'])
         self.image_classifier.to(self.device)  # Send to device
 
+        self.feat_transformer = nn.TransformerEncoderLayer(d_model=768, nhead=8, batch_first=True)
+
     def forward(self, Q, A, Im, A_Labels):
         with torch.no_grad():
             # Get the feature maps from image encoder
@@ -140,12 +142,15 @@ class QAModel(nn.Module):
             feat4 = self.image_encoder[7](feat3)
             feat5 = self.image_encoder[8](feat4)
 
-        # Get feature embeddings after conv and avg-pooling layers and concatenate them
-        feat_embeds = self.avg(self.conv1(feat1).squeeze(-1))
-        feat_embeds = torch.concat((feat_embeds, self.avg(self.conv2(feat2).squeeze(-1))), dim=2)
-        feat_embeds = torch.concat((feat_embeds, self.avg(self.conv3(feat3).squeeze(-1))), dim=2)
-        feat_embeds = torch.concat((feat_embeds, self.avg(self.conv4(feat4).squeeze(-1))), dim=2)
-        feat_embeds = torch.concat((feat_embeds, self.avg(self.conv5(feat5).squeeze(-1))), dim=2).view(self.N, 5, 768)
+            # Get feature embeddings after conv and avg-pooling layers and concatenate them
+            feat_embeds = self.avg(self.conv1(feat1).squeeze(-1))
+            feat_embeds = torch.concat((feat_embeds, self.avg(self.conv2(feat2).squeeze(-1))), dim=2)
+            feat_embeds = torch.concat((feat_embeds, self.avg(self.conv3(feat3).squeeze(-1))), dim=2)
+            feat_embeds = torch.concat((feat_embeds, self.avg(self.conv4(feat4).squeeze(-1))), dim=2)
+            feat_embeds = torch.concat((feat_embeds, self.avg(self.conv5(feat5).squeeze(-1))), dim=2).view(self.N, 5, 768)
+
+        # Pass feat_embeds through transformer layer prior to concatenation
+        feat_embeds = self.feat_transformer(feat_embeds)
 
         # Tokenize Question
         tokenized_Q = self.tokenizer(Q,
@@ -183,29 +188,30 @@ class QAModel(nn.Module):
             # Remove cls ID
             Im_cls_ids = Im_cls_ids[:, 1:]
 
-        # Get the embeddings from the various classification IDs
-        Q_cls_embed = self.embedder(Q_cls_ids)
-        A_cls_embed = self.embedder(A_cls_ids)
-        Im_cls_embed = self.embedder(Im_cls_ids)
+            # Get the embeddings from the various classification IDs
+            Q_cls_embed = self.embedder(Q_cls_ids)
+            A_cls_embed = self.embedder(A_cls_ids)
+            Im_cls_embed = self.embedder(Im_cls_ids)
 
-        # Get the IDs and the embeddings from the question
-        Q_input_ids = tokenized_Q['input_ids'].to(self.device)
-        input_embeds = self.embedder(Q_input_ids)
+            # Get the IDs and the embeddings from the question
+            Q_input_ids = tokenized_Q['input_ids'].to(self.device)
+            input_embeds = self.embedder(Q_input_ids)
 
-        # Concatenate all of the information that we've accumulated up until now
-        input_embeds = torch.concat((
-            input_embeds,  # Question embeddings
-            feat_embeds,  # Feature map embeddings
-            Q_cls_embed,  # Question class embeddings
-            A_cls_embed,  # Answer class embeddings
-            Im_cls_embed  # Image class embeddings
-        ), dim=1)
+            # Concatenate all of the information that we've accumulated up until now
+            input_embeds = torch.concat((
+                input_embeds,  # Question embeddings
+                feat_embeds,  # Feature map embeddings
+                Q_cls_embed,  # Question class embeddings
+                A_cls_embed,  # Answer class embeddings
+                Im_cls_embed  # Image class embeddings
+                # self.cls_token_emb.repeat((4, 1)).unsqueeze(1)  # Uncomment and comment above 3 lines for ablation study
+            ), dim=1)
 
-        # The input to the model
-        inputs = {
-            'inputs_embeds': input_embeds.to(self.device),
-            'labels': A_Labels.to(self.device)
-        }
+            # The input to the model
+            inputs = {
+                'inputs_embeds': input_embeds.to(self.device),
+                'labels': A_Labels.to(self.device)
+            }
 
         # The output of the model
         outputs = self.model(**inputs)

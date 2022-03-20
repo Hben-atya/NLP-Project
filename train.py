@@ -9,13 +9,14 @@ from nltk.translate.bleu_score import sentence_bleu
 
 
 class QA_Trainer:
-    def __init__(self, QA_model, QA_model_args, optimizer=None, device=None):
+    def __init__(self, QA_model, QA_model_args, optimizer, device, ref_arr):
         self.QA_model = QA_model  # Question-Answering Model
         self.optimizer = optimizer  # Optimizer
         self.device = device  # Device
         self.QA_model_args = QA_model_args  # QA model arguments
         self.QA_logs_path = QA_model_args['log_path']  # QA model logging path
         self.writer = SummaryWriter(self.QA_logs_path)  # Summary writer (tensorboard) for logging
+        self.ref_arr = ref_arr
 
         # Send model to device
         if self.device:
@@ -120,14 +121,15 @@ class QA_Trainer:
             self.writer.add_scalar(tag='Loss/train_loss', scalar_value=avg_train_loss, global_step=epoch + 1)
 
             if (epoch + 1) % val_step == 0:
-                avg_val_loss, avg_val_acc, avg_val_top5_acc = self.eval(dl_dev)
+                avg_val_loss, avg_val_acc, avg_val_top5_acc, avg_val_bleu = self.eval(dl_dev)
                 self.writer.add_scalar(tag='Loss/val_loss', scalar_value=avg_val_loss, global_step=epoch + 1)
                 self.writer.add_scalar(tag='Acc/val_acc', scalar_value=avg_val_acc, global_step=epoch + 1)
                 self.writer.add_scalar(tag='Acc/val_top5_acc', scalar_value=avg_val_top5_acc, global_step=epoch + 1)
-                print('epoch {}, val loss {}, val acc {}, val_top5_acc {}'.format(epoch + 1,
+                print('epoch {}, val loss {}, val acc {}, val_top5_acc {}, val_bleu {}'.format(epoch + 1,
                                                                                   avg_val_loss,
                                                                                   avg_val_acc,
-                                                                                  avg_val_top5_acc))
+                                                                                  avg_val_top5_acc,
+                                                                                  avg_val_bleu))
                 if avg_val_acc > best_val_acc:
                     print('save new best model')
                     torch.save(self.QA_model.state_dict(), os.path.join(self.QA_logs_path, 'best_QA_model.pt'))
@@ -144,7 +146,7 @@ class QA_Trainer:
                 torch.save(checkpoints, os.path.join(self.QA_logs_path, 'checkpoint.pt'))
 
     @torch.no_grad()
-    def eval(self, dl_val: DataLoader, ref_arr=None):
+    def eval(self, dl_val):
         scaler = torch.cuda.amp.GradScaler()  # Scaler for mixed precision (16/32 bit) computation
         # Set model to evaulation mode
         self.QA_model.eval()
@@ -183,11 +185,12 @@ class QA_Trainer:
                 loss = None
 
                 # Calculate BLEU score. N in N-grams changes based on the length of the answer. For example, 4-gram for
-                # the answe 'no' is nonsensical. Weights are equally distributed (i.e. for 4-gram, weight is [0.25] * 4)
+                # the answer 'no' is nonsensical. Weights are equally distributed
+                # (i.e. for 4-gram, weight is [0.25] * 4)
                 temp = 0
                 for i in range(len(y_true)):
-                    reference = [ref_arr[y_true[i]].split(' ')]
-                    predict = ref_arr[pred[i]].split(' ')
+                    reference = [self.ref_arr[y_true[i]].split(' ')]
+                    predict = self.ref_arr[pred[i]].split(' ')
                     n = min(4, len(reference[0]), len(predict))
                     weights = tuple([1. / n] * n)
                     temp += sentence_bleu(reference, predict, weights=weights)
