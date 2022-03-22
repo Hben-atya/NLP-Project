@@ -92,20 +92,23 @@ if __name__ == '__main__':
     Test_A_Labels = test_df['A_Type'].to_list()
 
     # Number of unique answer types
-    num_A_Type_labels = 2
+    num_labels = 2
 
     # Currently file is set to train the answer-type classifier. To change, change the labels to X_Q_Labels and
-    # the num_A_Type_labels to num_Q_type_labels
+    # num_labels to 11 (above) ----- (ONLY RELEVANT FOR TRAINING) -----
 
     # Create the different datasets
     trainset = QA_Type_Dataset(encodings=Train_Q_Encodings, labels=Train_A_Labels)
     valset = QA_Type_Dataset(encodings=Val_Q_Encodings, labels=Val_A_Labels)
     testset = QA_Type_Dataset(encodings=Test_Q_Encodings, labels=Test_A_Labels)
 
+    # Comment and uncomment the model initialization in order to fine-tune the original pre-trained model
+    model = AutoModelForSequenceClassification.from_pretrained('QA_Logs/A_Type_Logs/checkpoint-80')
+
     # Initialize the model
-    model = AutoModelForSequenceClassification.from_pretrained(
-        "mmoradi/Robust-Biomed-RoBERTa-TextClassification",
-        num_labels=num_A_Type_labels)
+    # model = AutoModelForSequenceClassification.from_pretrained(
+    #     "mmoradi/Robust-Biomed-RoBERTa-TextClassification",
+    #     num_labels=num_labels)
 
     # Initialize the training arguments
     training_args = TrainingArguments(
@@ -136,7 +139,8 @@ if __name__ == '__main__':
     )
 
     # Train model
-    trainer.train()
+    # trainer.train()
 
     # Evaluate model with test-set
-    trainer.evaluate(eval_dataset=testset, metric_key_prefix='eval')
+    metrics = trainer.evaluate(eval_dataset=testset, metric_key_prefix='eval')
+    print(metrics)
